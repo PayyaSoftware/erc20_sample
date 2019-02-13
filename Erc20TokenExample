@@ -1,0 +1,106 @@
+pragma solidity ^0.5.0;
+
+interface ERC20Protocol {
+    // 當轉移發生時觸發以紀錄事件即使轉移值為0
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    // 當成功授權時觸發以紀錄事件
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    // OPTIONAL - 回傳貨幣名稱
+    function name() public view returns (string);
+    // OPTIONAL - 回傳貨幣圖案
+    function symbol() public view returns (string);
+    // OPTIONAL - 回傳代幣最小單位數值
+    function decimals() public view returns (uint8);
+    // 回傳代幣總發行量
+    function totalSupply() public view returns (uint256);
+    // 查詢該持有者擁有的代幣數量
+    function balanceOf(address _owner) public view returns (uint256 balance);
+    // 將指定數量的代幣轉移到指定位址，且必須觸發轉移事件
+    function transfer(address _to, uint256 _value) public returns (bool success);
+    // 將某帳戶的代幣轉移到另一個帳戶，且必須觸發轉移事件
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+    // 設定該使用者可執行有效交易的次數
+    function approve(address _spender, uint256 _value) public returns (bool success);
+    // 回傳使用者可從擁有者取得的可用金額
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+}
+
+contract Erc20TokenExample is ERC20Protocol {
+    string private name;
+    string private symbol;
+    uint8 private decimals;
+    uint256 private totalSupply = 0;
+
+    mapping(address => uint256) public balances;
+    mapping(address => mapping(address => uint256)) allowed;
+
+    constructor() public  {
+        name = "Digital Exchange Token";
+        symbol = "DEX";
+        decimals = 0;
+    }
+
+    function init(string _name, string _symbol, uint8 _decimals) initializer {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+    }
+
+    function symbol() public view returns (string) {
+        return symbol;
+    }
+
+    function decimals() public view returns (uint8){
+        return decimals;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return totalSupply;
+    }
+
+    function balanceOf(address _owner) public view returns (uint256 balance) {
+        return balances[_owner];
+    }
+
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        if (balanceOf[msg.sender] < _value) {
+            return false;
+        } else if (balanceOf[_to] + _value < balanceOf[_to]) {
+            return false;
+        }
+
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        totalSupply += _value;
+        emit Transfer(msg.sender, _to, _value);
+        return true;
+    }
+
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+        if (balanceOf[_from] < _value) {
+            return false;
+        } else if (balanceOf[_to] + _value < balanceOf[_to]) {
+            return false;
+        }
+
+        allowed[_from][msg.sender] -= _value;
+        balanceOf[_from] -= _value;
+        balanceOf[_to] += _value;
+        emit Transfer(_from, _to, _value);
+        return true;
+    }
+
+    function approve(address _spender, uint256 _value) public returns (bool success) {
+        if (balanceOf[_spender] + _value < balanceOf[_spender]) {
+            return false;
+        }
+
+        allowed[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
+        return true;
+    }
+
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+        return allowed[_owner][_spender];
+    }
+}
